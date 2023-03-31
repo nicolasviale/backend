@@ -35,7 +35,6 @@ class prodructManager {
 
             return [...this.products, {id: this.products[this.products.length-1].id + 1, ...newProduct}]
         
-        
     }
     getProducts(){
         return this.product
