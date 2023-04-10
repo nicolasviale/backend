@@ -1,19 +1,21 @@
-const { mock } = require ('./mock')
+const { mock } = require('../../mock')
 const { promises } = require('fs')
 const fs = promises
 
 class ProductManager {
     constructor(products = []) {
         this.products = products
-        this.lastId = 0
-        this.path = './data.json'
+        this.path = `./data.json`
     }
 
     getProducts = async () => {
         try {
             const resp = await fs.readFile(this.path, 'utf-8')
-            const productos = JSON.parse(resp)
-            return productos
+            if (resp.length === 0){ return []}
+                else {
+                    const productos = JSON.parse(resp)
+                    return productos
+                }            
         } catch (error) {
             console.log(error)
         }
@@ -23,15 +25,21 @@ class ProductManager {
         try {
             const productJSON = JSON.stringify(this.products, null, 2)
             console.log('Escribiendo en el archivo', this.path);
-            await fs.writeFile(this.path, productJSON, 'utf-8')
+            await fs.writeFile(this.path, productJSON)
         } catch (error) {
             console.log(error)
         }
     }
 
-    addProduct({ title, description, price, thumbnail, code, stock }) {
+    addProduct = async ({ title, description, price, thumbnail, code, stock }) => {
+        const productsFS = await this.getProducts();
+        if (productsFS === undefined) {
+            this.products = []
+        } else {
+            this.products = productsFS
+        }
+
         const product = {
-            id: ++this.lastId,
             title,
             description,
             price,
@@ -40,13 +48,21 @@ class ProductManager {
             stock,
         };
 
-        if (!title || !description || !price || !thumbnail || !code || !stock) {
-            console.error("Todos los campos son obligatorios");
+        const existingProduct = this.getProductByCode(code);
+        if (existingProduct) {
+            console.error(`Ya existe un producto con el código ${code}`);
             return;
         }
 
-        if (this.getProductByCode(code)) {
-            console.error("Ya existe un producto con el código ingresado");
+        // ID Autoincremental
+        if (this.products.length === 0) {
+            product.id = 1
+        } else {
+            product.id = this.products[this.products.length - 1].id + 1
+        }
+
+        if (!title || !description || !price || !thumbnail || !code || !stock) {
+            console.error("Todos los campos son obligatorios");
             return;
         }
 
@@ -67,11 +83,6 @@ class ProductManager {
         }
     }
 
-    getProductByCode= async (code) => {
-        const productos = await this.getProducts();
-        return productos.find((p) => p.code === code);
-    }
-    
 
     deleteProduct = async (id) => {
         try {
@@ -91,6 +102,12 @@ class ProductManager {
         } catch (error) {
             console.log(error)
         }
+    }
+
+
+    getProductByCode = (code) => {
+        const existingProduct = this.products.find((p) => p.code === code);
+        return existingProduct;
     }
 
     updateProduct = async (id, obj) => {
@@ -115,11 +132,32 @@ class ProductManager {
 
 const nuevoProducto = new ProductManager();
 
+
 // mock.forEach(product => {
 //     nuevoProducto.addProduct(product)
 // });
 
 // nuevoProducto.getProducts()
+
+// nuevoProducto.addProduct({
+//     title: 'Auto familiar',
+//     description: 'Auto familiar con amplio espacio interior',
+//     price: 30000,
+//     thumbnail: 'auto.jpg',
+//     code: 'AUTO004',
+//     stock: 6
+// })
+// nuevoProducto.addProduct(
+//     {
+//         title: 'Camioneta deportiva',
+//         description: 'Camioneta deportiva de alta potencia',
+//         price: 40000,
+//         thumbnail: 'camioneta.jpg',
+//         code: 'CAMIONETA003',
+//         stock: 3
+//     })
+
+
 
 // nuevoProducto.getProductById(7)
 
